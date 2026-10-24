@@ -1,0 +1,455 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>वेबसाईट बिल्डर</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700&family=Rozha+One&display=swap">
+<style>
+/* Layout: one workbench column. An idea card on top, then a tabbed workspace (preview, code, AI change, download, projects). */
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --surface2:#E4E9F2; --ink:#111B2E; --muted:#56637A; --line:#C9D2E2;
+  --accent:#1F4FD8; --accent-ink:#FFFFFF; --accent-soft:#DCE6FF;
+  --good:#17703F; --good-bg:#DAF1E3; --warn:#7A5200; --warn-bg:#FAEBC2; --bad:#B3321F; --bad-bg:#F9DAD4;
+  --code-bg:#0F1729; --code-ink:#E4ECFA; --stage:#D5DCEA;
+  --font-display:'Rozha One','Mukta','Noto Sans Devanagari',Georgia,serif;
+  --font-body:'Mukta','Noto Sans Devanagari',system-ui,sans-serif;
+  --font-code:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A101D; --surface:#121B2E; --surface2:#1B2640; --ink:#E6ECF8; --muted:#9AA8C4; --line:#2A3858;
+  --accent:#7FA3FF; --accent-ink:#0A1230; --accent-soft:#1B2A55;
+  --good:#5CCB92; --good-bg:#12301F; --warn:#E5B94A; --warn-bg:#33270A; --bad:#F0806E; --bad-bg:#3A1914;
+  --code-bg:#070C18; --code-ink:#DDE6F7; --stage:#0E1626; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A101D; --surface:#121B2E; --surface2:#1B2640; --ink:#E6ECF8; --muted:#9AA8C4; --line:#2A3858;
+  --accent:#7FA3FF; --accent-ink:#0A1230; --accent-soft:#1B2A55;
+  --good:#5CCB92; --good-bg:#12301F; --warn:#E5B94A; --warn-bg:#33270A; --bad:#F0806E; --bad-bg:#3A1914;
+  --code-bg:#070C18; --code-ink:#DDE6F7; --stage:#0E1626; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{font-family:var(--font-body);font-size:16px;line-height:1.5;background:var(--bg);color:var(--ink);
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:900px;margin:0 auto;display:grid;gap:16px}
+h1,h2,h3,p{margin:0}
+h1{font-family:var(--font-display);font-weight:400;font-size:clamp(30px,8vw,44px);line-height:1.15;text-wrap:balance}
+h2{font-size:18px;line-height:1.3}
+.lead{color:var(--muted);max-width:60ch;margin-top:6px}
+.sub,.hint{font-size:14px;color:var(--muted)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:12px;min-width:0}
+.lbl{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
+textarea,input,select{width:100%;min-height:44px;padding:9px 11px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+textarea{resize:vertical;line-height:1.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.f{min-width:0}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:6px;border:1px solid var(--accent);
+  background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;text-align:center}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{min-height:38px;padding:0 14px;font-size:15px}
+.btn.armed{background:var(--bad);border-color:var(--bad);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;min-height:34px;padding:2px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+  font-size:14px;cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--accent)}
+.tag{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600;background:var(--surface2)}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}
+.tag.good{background:var(--good-bg);color:var(--good)}
+
+.status{display:grid;gap:8px;padding:12px;border-radius:6px;background:var(--accent-soft)}
+.bar{height:6px;border-radius:3px;background:var(--surface);overflow:hidden}
+.bar i{display:block;height:100%;width:35%;background:var(--accent);border-radius:3px;animation:slide 1.3s ease-in-out infinite}
+@keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
+.notice{padding:12px 14px;border-radius:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:600;font-size:15px}
+.notice span{flex:1 1 220px}
+.notice.warn{background:var(--warn-bg);color:var(--warn)}
+.notice.bad{background:var(--bad-bg);color:var(--bad)}
+
+.projbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.projbar strong{font-size:18px;overflow-wrap:anywhere}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;min-height:42px;padding:0 16px;border:1px solid var(--line);background:var(--surface);border-radius:6px;font-weight:700;font-size:15px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#panel{display:grid;gap:12px;min-width:0}
+
+.stage{background:var(--stage);border-radius:8px;padding:10px;display:flex;justify-content:center;overflow:hidden}
+.frameWrap{width:100%;max-width:100%;transition:width .2s}
+.frameWrap.phone{width:390px}
+iframe{display:block;width:100%;height:68vh;min-height:460px;border:1px solid var(--line);border-radius:6px;background:#fff}
+textarea.code{font-family:var(--font-code);font-size:13px;line-height:1.5;background:var(--code-bg);color:var(--code-ink);border-color:var(--code-bg);
+  min-height:420px;white-space:pre;overflow:auto;tab-size:2}
+.vers{display:grid;gap:6px}
+.ver{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.ver:last-child{border-bottom:0}
+.ver span{min-width:0;overflow-wrap:anywhere}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.dlItem{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:8px;align-content:start}
+.proj{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.proj:last-child{border-bottom:0}
+.proj>div{min-width:0}
+.proj strong{overflow-wrap:anywhere}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:6px;z-index:20;max-width:calc(100% - 32px);font-weight:600;font-size:15px;text-align:center}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%}.frameWrap{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>वेबसाईट बिल्डर</h1>
+    <p class="lead">तुमची कल्पना मराठीत लिहा. चालणारी पूर्ण वेबसाईट तयार होते. बघा, बदला, आणि Netlify साठी फाईल डाउनलोड करा.</p>
+  </header>
+
+  <section class="card" id="ideaCard">
+    <h2>तुमची कल्पना</h2>
+    <div>
+      <label class="lbl" for="idea">कोणती वेबसाईट हवी? कोणते फीचर हवेत ते लिहा.</label>
+      <textarea id="idea" rows="5" maxlength="4000" placeholder="उदा. हॉटेलचा डिजिटल मेनू. ग्राहक पदार्थ निवडतील, कार्टमध्ये टाकतील आणि ऑर्डर WhatsApp वर पाठवतील."></textarea>
+    </div>
+    <div class="chips" id="examples" aria-label="उदाहरणे"></div>
+    <div class="grid2">
+      <div class="f"><label class="lbl" for="lang">भाषा</label>
+        <select id="lang"><option>मराठी</option><option>English</option><option>हिंदी</option></select></div>
+      <div class="f"><label class="lbl" for="colour">रंगसंगती</label>
+        <select id="colour"><option value="Choose what fits the subject best">विषयाला साजेशी (AI ठरवेल)</option><option value="Light and clean">उजळ आणि स्वच्छ</option><option value="Dark theme">गडद</option><option value="Bold and colourful">ठळक आणि रंगीत</option></select></div>
+    </div>
+    <div class="row">
+      <button class="btn" id="goBtn" type="button">वेबसाईट बनवा</button>
+      <button class="btn ghost" id="stopBtn" type="button" hidden>थांबवा</button>
+    </div>
+    <div class="status" id="status" hidden role="status">
+      <div id="statusText">विचार करत आहे…</div>
+      <div class="bar" aria-hidden="true"><i></i></div>
+      <p class="hint">मोठ्या वेबसाईटला १ ते ३ मिनिटे लागू शकतात. पेज बंद करू नका.</p>
+    </div>
+    <p class="hint">AI तुमच्या Claude खात्यावरून चालते आणि पहिल्या वेळी तुमची परवानगी विचारते. त्याचा वापर तुमच्या Claude मर्यादेत मोजला जातो.</p>
+  </section>
+
+  <div id="notice"></div>
+
+  <section class="card" id="work">
+    <div class="projbar">
+      <div><strong id="pName"></strong> <span id="pTag"></span><p class="sub" id="pMeta"></p></div>
+      <div class="row"><button class="btn sm" type="button" data-act="dlZip">Netlify फाईल डाउनलोड</button><button class="btn ghost sm" type="button" data-act="dlHtml">index.html डाउनलोड</button><button class="btn ghost sm" type="button" data-act="copyAll">HTML कोड कॉपी</button><button class="btn ghost sm" type="button" data-act="blank">रिकामा प्रोजेक्ट</button></div>
+    </div>
+    <div class="tabs" id="tabs" role="tablist" aria-label="विभाग"></div>
+    <div id="panel"></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const LS='wb.projects.v1',CUR='wb.current';
+const TABS=[['preview','पाहा'],['code','कोड'],['edit','बदल करा'],['dl','डाउनलोड'],['proj','माझे प्रोजेक्ट']];
+const EXAMPLES=[
+  'कोचिंग क्लास मॅनेजर: विद्यार्थी यादी, हजेरी, फी, टेस्ट गुण आणि पालकांना WhatsApp मेसेज',
+  'हॉटेलचा डिजिटल मेनू, कार्ट आणि WhatsApp वर ऑर्डर पाठवा',
+  'फोटोग्राफरची पोर्टफोलिओ साईट: गॅलरी, पॅकेजेस आणि संपर्क',
+  'दुकानाचा हिशेब: माल यादी, उधारी वही आणि रोजची विक्री',
+  'विद्यार्थ्यांसाठी गणित सराव क्विझ, स्कोअर आणि लीडरबोर्ड'
+];
+const EDITS=['रंगसंगती बदल','नवीन सेक्शन जोडा','फॉन्ट मोठा कर','संपर्क बटण जोडा','सर्व मजकूर मराठीत कर'];
+
+const DEMO='<!doctype html><html lang="mr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>उधारी वही</title><style>'+
+':root{--bg:#FFF8EC;--ink:#2B1D0E;--card:#fff;--ac:#B4540A;--line:#E7D5B8;--mut:#7A6648}'+
+'@media (prefers-color-scheme:dark){:root{--bg:#1B140B;--ink:#F5E9D4;--card:#261D12;--ac:#C96A1B;--line:#46361F;--mut:#BBA57F}}'+
+'*{box-sizing:border-box}body{margin:0;font:17px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:16px}'+
+'main{max-width:520px;margin:0 auto;display:grid;gap:14px}h1{margin:0;font-size:26px}'+
+'.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:10px}'+
+'input,button{font:inherit;min-height:44px;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}'+
+'button{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:700;cursor:pointer}'+
+'.row{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:8px 0}'+
+'.row button{width:auto;min-height:36px}.tot{font-size:22px;font-weight:700;color:var(--ac)}'+
+'</style></head><body><main><h1>उधारी वही</h1><p style="margin:0;color:var(--mut)">उदाहरण वेबसाईट. नाव आणि रक्कम टाका, एकूण उधारी लगेच दिसते.</p>'+
+'<form class="card" id="f"><input id="n" placeholder="ग्राहकाचे नाव" required><input id="a" type="number" min="1" placeholder="रक्कम ₹" required><button>उधारी जोडा</button></form>'+
+'<section class="card"><div>एकूण उधारी: <span class="tot" id="t">₹0</span></div><div id="l"></div></section></main>'+
+'<script>'+
+"var K='udhari',D=[];try{D=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){}"+
+"if(!D.length)D=[{n:'रमेश (उदाहरण)',a:450},{n:'सुनीता (उदाहरण)',a:1200}];"+
+"function s(){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}}"+
+"function r(){var t=0,h='';D.forEach(function(x,i){t+=x.a;h+='<div class=\"row\"><span>'+String(x.n).replace(/[<>&]/g,'')+' · ₹'+x.a+'</span><button data-i=\"'+i+'\">जमा झाले</button></div>'});"+
+"document.getElementById('t').textContent='₹'+t;document.getElementById('l').innerHTML=h||'<p>कोणतीही उधारी नाही.</p>'}"+
+"document.getElementById('f').onsubmit=function(e){e.preventDefault();D.push({n:document.getElementById('n').value,a:+document.getElementById('a').value});document.getElementById('n').value='';document.getElementById('a').value='';s();r()};"+
+"document.getElementById('l').onclick=function(e){var i=e.target.getAttribute('data-i');if(i!==null){D.splice(+i,1);s();r()}};r();"+
+'<\/script></body></html>';
+const BLANK='<!doctype html>\n<html lang="mr">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>माझी वेबसाईट</title>\n<style>\nbody{font-family:system-ui,sans-serif;margin:0;padding:24px;line-height:1.6}\n</style>\n</head>\n<body>\n<h1>माझी वेबसाईट</h1>\n<p>येथे तुमचा मजकूर लिहा.</p>\n</body>\n</html>\n';
+
+/* state */
+let P=null,versions=[],tab='preview',device='phone',busy=false,ctrl=null,pending=null,toastTimer;
+
+function titleOf(h){const m=/<title[^>]*>([\s\S]*?)<\/title>/i.exec(h||'');return m&&m[1].trim()?m[1].trim().slice(0,60):'नवीन वेबसाईट';}
+function kb(h){return Math.max(1,Math.round(new Blob([h||'']).size/1024));}
+function toast(m){const el=$('#toast');el.textContent=m;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.hidden=true;},2600);}
+function loadList(){try{const l=JSON.parse(localStorage.getItem(LS)||'[]');return Array.isArray(l)?l:[];}catch(e){return [];}}
+function saveList(l){try{localStorage.setItem(LS,JSON.stringify(l));return true;}catch(e){toast('साठवण भरली. जुने प्रोजेक्ट काढा.');return false;}}
+function persist(){
+  if(!P||P.sample)return;
+  const l=loadList().filter(x=>x.id!==P.id);
+  l.unshift({id:P.id,title:titleOf(P.html),idea:P.idea||'',html:P.html,updated:Date.now()});
+  saveList(l.slice(0,12));
+  try{localStorage.setItem(CUR,P.id);}catch(e){}
+}
+function init(){
+  let id=null;try{id=localStorage.getItem(CUR);}catch(e){}
+  const f=loadList().find(x=>x.id===id)||null;
+  P=f?{id:f.id,idea:f.idea,html:f.html,sample:false}:{id:uid(),idea:'',html:DEMO,sample:true};
+}
+function setHtml(h,label){
+  if(P.html&&P.html!==h){versions.push({label:label,html:P.html,t:Date.now()});if(versions.length>10)versions.shift();}
+  P.html=h;P.sample=false;persist();head();
+}
+function head(){
+  $('#pName').textContent=titleOf(P.html);
+  $('#pTag').innerHTML=P.sample?'<span class="tag warn">उदाहरण</span>':'';
+  $('#pMeta').textContent=kb(P.html)+' KB'+(P.sample?' · हे फक्त उदाहरण आहे. वरती तुमची कल्पना लिहून स्वतःची वेबसाईट बनवा.':' · आपोआप साठवले जाते');
+}
+
+/* preview */
+const SHIM='<script>(function(){try{localStorage.getItem("__t");}catch(e){var m={};var s={getItem:function(k){return Object.prototype.hasOwnProperty.call(m,k)?m[k]:null},setItem:function(k,v){m[k]=String(v)},removeItem:function(k){delete m[k]},clear:function(){m={}},key:function(i){return Object.keys(m)[i]||null},get length(){return Object.keys(m).length}};try{Object.defineProperty(window,"localStorage",{value:s,configurable:true});Object.defineProperty(window,"sessionStorage",{value:s,configurable:true});}catch(x){}}})();<\/script>';
+function previewDoc(h){
+  const i=h.search(/<head[^>]*>/i);
+  if(i>=0){const m=h.match(/<head[^>]*>/i)[0];return h.slice(0,i+m.length)+SHIM+h.slice(i+m.length);}
+  return SHIM+h;
+}
+
+/* output handling */
+function extractHtml(t){
+  let s=String(t||'').replace(/^\s*```[a-zA-Z]*\s*/,'');
+  const i=s.search(/<!doctype html|<html[\s>]/i);
+  if(i<0)return {html:'',complete:false};
+  s=s.slice(i);
+  const j=s.toLowerCase().lastIndexOf('</html>');
+  if(j>=0)return {html:s.slice(0,j+7)+'\n',complete:true};
+  return {html:s.replace(/\s*```\s*$/,''),complete:false};
+}
+function stripFence(t){return String(t||'').replace(/^\s*```[a-zA-Z]*\s*\n?/,'').replace(/\n?```\s*$/,'');}
+
+/* AI */
+const RULES='Hard rules:\n'+
+'- Output ONLY the HTML document, starting with <!doctype html> and ending with </html>. No markdown fences, no explanation before or after.\n'+
+'- Everything in this one file: CSS in <style>, JavaScript in <script>. The only external resources allowed are Google Fonts stylesheet links and scripts from cdnjs.cloudflare.com pinned to an exact version.\n'+
+'- Every feature must really work with JavaScript. Keep user data in localStorage, wrapped in try/catch so the page still works if storage is unavailable. No backend, no login, no fake buttons, no lorem ipsum.\n'+
+'- Start with realistic sample data clearly marked as examples, and give a way to clear it.\n'+
+'- Mobile-first, works at 360px wide with no horizontal scroll, touch targets at least 44px, visible focus states, light and dark colour schemes through prefers-color-scheme.\n'+
+'- A distinctive, tasteful design with a clear type scale and a palette chosen for the subject, not a generic template look.\n'+
+'- Never use alert(), confirm() or prompt(); build confirmations into the page. Use wa.me links (https://wa.me/<number>?text=<url-encoded text>) wherever WhatsApp sharing helps.\n'+
+'- Include <title>, a viewport meta tag and a lang attribute.\n'+
+'- Keep the whole file compact, under about 40 KB, so the answer is not cut off.';
+function genPrompt(idea,lang,colour){
+  return 'You are an expert front-end developer. Build ONE complete, production-quality, single-file website or web app from the brief below.\n\n'+RULES+
+  '\n\nLanguage for all visible text: '+lang+'\nColour preference: '+colour+'\n\nBrief:\n'+idea;
+}
+function editPrompt(instr,html){
+  return 'You are an expert front-end developer. Below is the current single-file HTML website. Apply the requested change and return the COMPLETE updated HTML document only (start with <!doctype html>, end with </html>, no fences, no explanation). Keep everything that already works.\n\n'+RULES+
+  '\n\nRequested change:\n'+instr+'\n\nCurrent HTML:\n'+html;
+}
+function contPrompt(partial){
+  return 'The HTML document below was cut off before it finished. Continue it EXACTLY from the last character, so that appending your output to it gives one complete valid document ending with </html>. Output only the continuation text. Do not repeat anything already written. No markdown fences.\n\nDocument so far:\n'+partial;
+}
+function setBusy(b,label){
+  busy=b;
+  $('#goBtn').disabled=b;$('#stopBtn').hidden=!b;$('#status').hidden=!b;
+  document.querySelectorAll('[data-ai]').forEach(x=>{x.disabled=b;});
+  if(b)$('#statusText').textContent=label||'विचार करत आहे…';
+}
+function friendly(e){
+  const c=e&&e.code;
+  if(e&&e.friendly)return e.friendly;
+  if(c==='cancelled')return 'थांबवले.';
+  if(c==='not_granted')return 'AI वापरण्याची परवानगी दिली नाही. पुन्हा "वेबसाईट बनवा" दाबून परवानगी द्या.';
+  if(c==='rate_limited')return 'तुमची Claude वापर मर्यादा किंवा विनंत्यांची मर्यादा झाली आहे. थोड्या वेळाने स्वतः पुन्हा प्रयत्न करा.';
+  if(c==='sampling_disabled')return 'या खात्यावर AI उपलब्ध नाही.';
+  if(c==='session_expired')return 'Claude मध्ये पुन्हा साइन-इन करा.';
+  if(c==='prompt_too_large')return 'वेबसाईट खूप मोठी झाली आहे. बदल लहान ठेवा किंवा कोड कमी करा.';
+  if(c==='refused')return 'ही कल्पना AI ने नाकारली. वेगळ्या शब्दांत लिहा.';
+  return 'काहीतरी चुकले'+(e&&e.message?': '+e.message:'.')+' पुन्हा प्रयत्न करा.';
+}
+async function callAI(prompt,tier,label){
+  if(!(window.claude&&typeof window.claude.use==='function'))throw {friendly:'हे पेज Claude बाहेर उघडले आहे, म्हणून AI चालणार नाही. "कोड" विभागात स्वतःचा कोड पेस्ट करून पाहू शकता.'};
+  const sample=await window.claude.use('sample');
+  if(!sample)throw {friendly:'या व्ह्यूअरमध्ये AI उपलब्ध नाही. "कोड" विभागात स्वतःचा कोड पेस्ट करून पाहू शकता.'};
+  ctrl=new AbortController();
+  setBusy(true,label);
+  let raf=0,last='';
+  const paint=()=>{raf=0;$('#statusText').textContent='कोड लिहिला जात आहे… '+last.length+' अक्षरे';};
+  try{
+    return await sample(prompt,{signal:ctrl.signal,cache:false,modelTier:tier,onText:function(u){last=u.text;if(!raf)raf=requestAnimationFrame(paint);}});
+  }finally{setBusy(false);}
+}
+function showNotice(kind,msg,btn){
+  const n=$('#notice');
+  if(!msg){n.innerHTML='';return;}
+  n.innerHTML='<div class="notice '+kind+'"><span>'+esc(msg)+'</span>'+(btn?'<button class="btn sm" type="button" data-act="'+btn[0]+'" data-ai="1">'+esc(btn[1])+'</button>':'')+'</div>';
+}
+function handleResult(res,ctx){
+  const x=extractHtml(res.text);
+  if(!x.html){showNotice('bad','वेबसाईट कोड मिळाला नाही. कल्पना थोडी बदलून पुन्हा प्रयत्न करा.');return;}
+  if(x.complete&&!res.truncated){
+    pending=null;showNotice('',null);
+    if(ctx.mode==='new'){P={id:uid(),idea:ctx.idea,html:x.html,sample:false};versions=[];persist();head();}
+    else setHtml(x.html,ctx.label);
+    tab='preview';render();toast('तयार झाले');
+  }else{
+    pending={html:x.html,ctx:ctx,rounds:(ctx.rounds||0)};
+    showNotice('warn','कोड अर्धवट आला. पुढे चालू ठेवा दाबा.',['cont','पुढे चालू ठेवा']);
+  }
+}
+async function generate(){
+  if(busy)return;
+  const idea=$('#idea').value.trim();
+  if(idea.length<12){toast('कल्पना थोडी सविस्तर लिहा');$('#idea').focus();return;}
+  showNotice('',null);
+  try{
+    const res=await callAI(genPrompt(idea,$('#lang').value,$('#colour').value),'complex','विचार करत आहे…');
+    handleResult(res,{mode:'new',idea:idea,label:'नवीन'});
+  }catch(e){if(e&&e.code==='cancelled')toast('थांबवले');else showNotice('bad',friendly(e));}
+}
+async function applyEdit(){
+  if(busy)return;
+  const instr=($('#editIn')||{}).value;
+  if(!instr||instr.trim().length<4){toast('कोणता बदल हवा ते लिहा');return;}
+  showNotice('',null);
+  try{
+    const res=await callAI(editPrompt(instr.trim(),P.html),'default','बदल करत आहे…');
+    handleResult(res,{mode:'edit',label:instr.trim().slice(0,40)});
+  }catch(e){if(e&&e.code==='cancelled')toast('थांबवले');else showNotice('bad',friendly(e));}
+}
+async function continueGen(){
+  if(busy||!pending)return;
+  if(pending.rounds>=3){showNotice('bad','अनेक वेळा प्रयत्न केला तरी कोड पूर्ण झाला नाही. कल्पना लहान करा.');return;}
+  try{
+    const res=await callAI(contPrompt(pending.html),'default','पुढचा भाग लिहित आहे…');
+    const merged=pending.html+stripFence(res.text);
+    const x=extractHtml(merged);
+    const ctx=Object.assign({},pending.ctx,{rounds:pending.rounds+1});
+    handleResult({text:x.html||merged,truncated:res.truncated},ctx);
+  }catch(e){if(e&&e.code==='cancelled')toast('थांबवले');else showNotice('bad',friendly(e));}
+}
+
+/* downloads */
+async function saveOut(name,data){
+  try{
+    if(window.claude&&typeof window.claude.use==='function'){
+      const d=await window.claude.use('downloads');
+      if(d){await d.save({filename:name,data:data});toast('फाईल सेव्ह केली: '+name);return;}
+    }
+  }catch(e){
+    if(e&&e.code==='declined'){toast('सेव्ह रद्द केले');return;}
+  }
+  try{
+    const blob=data instanceof Blob?data:new Blob([data],{type:'text/html'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);toast('डाउनलोड सुरू: '+name);
+  }catch(e){toast('डाउनलोड झाले नाही. कोड कॉपी करून वापरा.');}
+}
+async function dlZip(){
+  if(!window.JSZip){toast('झिप तयार करता आली नाही. index.html डाउनलोड करा.');return;}
+  const z=new window.JSZip();z.file('index.html',P.html);
+  const blob=await z.generateAsync({type:'blob',compression:'DEFLATE'});
+  saveOut('netlify-site.zip',blob);
+}
+function copyText(t,okMsg,el){
+  const fail=()=>{if(el){try{el.focus();el.select();}catch(e){}}toast('कॉपी झाले नाही. कोड निवडून कॉपी करा.');};
+  try{navigator.clipboard.writeText(t).then(()=>toast(okMsg),fail);}catch(e){fail();}
+}
+
+/* panels */
+function renderTabs(){
+  $('#tabs').innerHTML=TABS.map(t=>'<button class="tab" type="button" role="tab" aria-selected="'+(tab===t[0])+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('');
+}
+function render(){
+  renderTabs();head();
+  const p=$('#panel');
+  if(tab==='preview'){
+    p.innerHTML='<div class="row"><button class="btn ghost sm" type="button" data-act="dev" data-d="phone" aria-pressed="'+(device==='phone')+'">फोन</button>'+
+      '<button class="btn ghost sm" type="button" data-act="dev" data-d="wide" aria-pressed="'+(device==='wide')+'">मोठी स्क्रीन</button>'+
+      '<button class="btn ghost sm" type="button" data-act="reload">पुन्हा लोड</button></div>'+
+      '<div class="stage"><div class="frameWrap '+device+'" id="fw"></div></div>'+
+      '<p class="hint">पूर्वावलोकनात वेबसाईटची माहिती फक्त तेवढ्या वेळेसाठी राहते. Netlify वर टाकल्यावर ती फोनमध्ये कायम साठते.</p>';
+    mountFrame();
+    document.querySelectorAll('[data-act="dev"]').forEach(b=>{b.style.borderColor=b.dataset.d===device?'var(--accent)':'';});
+  }else if(tab==='code'){
+    p.innerHTML='<div class="row"><button class="btn sm" type="button" data-act="applyCode">बदल लागू करा आणि पाहा</button>'+
+      '<button class="btn ghost sm" type="button" data-act="copyCode">कोड कॉपी करा</button></div>'+
+      '<textarea class="code" id="code" spellcheck="false" autocapitalize="none" autocomplete="off" aria-label="वेबसाईटचा HTML कोड"></textarea>'+
+      '<p class="hint">येथे कोड थेट बदलता येतो. दुसरीकडे बनवलेला HTML कोडही पेस्ट करून पाहू आणि डाउनलोड करू शकता.</p>';
+    $('#code').value=P.html;
+  }else if(tab==='edit'){
+    p.innerHTML='<div><label class="lbl" for="editIn">काय बदल करायचा आहे?</label>'+
+      '<textarea id="editIn" rows="3" maxlength="2000" placeholder="उदा. वरचा रंग निळा कर आणि संपर्क विभाग जोडा."></textarea></div>'+
+      '<div class="chips">'+EDITS.map(x=>'<button class="chip" type="button" data-act="editChip" data-t="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+      '<div class="row"><button class="btn" type="button" data-act="aiEdit" data-ai="1"'+(busy?' disabled':'')+'>बदल करा</button></div>'+
+      '<div><h2>मागचे वर्जन</h2>'+(versions.length?'<div class="vers">'+versions.slice().reverse().map((v,i)=>{const idx=versions.length-1-i;
+        return '<div class="ver"><span>'+esc(v.label)+' <span class="sub">· '+kb(v.html)+' KB · '+new Date(v.t).toLocaleTimeString('mr-IN',{hour:'2-digit',minute:'2-digit'})+'</span></span><button class="btn ghost sm" type="button" data-act="restore" data-i="'+idx+'">परत आणा</button></div>';}).join('')+'</div>':'<p class="sub">बदल केल्यावर मागचे वर्जन येथे दिसतील आणि परत आणता येतील.</p>')+'</div>';
+  }else if(tab==='dl'){
+    p.innerHTML='<div class="dl"><div class="dlItem"><h3>Netlify साठी झिप</h3><p class="sub">index.html असलेली झिप फाईल. Netlify वर टाकण्यासाठी हीच घ्या.</p><button class="btn" type="button" data-act="dlZip">netlify-site.zip डाउनलोड</button></div>'+
+      '<div class="dlItem"><h3>HTML फाईल</h3><p class="sub">फक्त index.html. कोणत्याही होस्टिंगवर चालते.</p><button class="btn ghost" type="button" data-act="dlHtml">index.html डाउनलोड</button></div>'+
+      '<div class="dlItem"><h3>कोड कॉपी</h3><p class="sub">पूर्ण कोड कॉपी होतो. दुसऱ्या एडिटरमध्ये पेस्ट करा.</p><button class="btn ghost" type="button" data-act="copyAll">पूर्ण कोड कॉपी करा</button></div></div>'+
+      '<div class="card"><h2>कायमची लिंक कशी मिळवायची</h2><ol class="steps"><li>वरून netlify-site.zip डाउनलोड करा.</li>'+
+      '<li>Netlify Drop उघडा आणि मोफत खात्याने लॉगिन करा. लॉगिन केल्याशिवाय टाकलेली साईट काही वेळाने बंद होते.</li>'+
+      '<li>झिप फाईल तिथे टाका किंवा निवडा.</li><li>काही सेकंदांत xxxx.netlify.app अशी लिंक मिळते. ती कुणालाही देता येते.</li></ol>'+
+      '<div class="row"><a class="btn ghost" href="https://app.netlify.com/drop" target="_blank" rel="noopener">Netlify Drop उघडा</a></div>'+
+      '<p class="hint">बटणांची नावे Netlify वर थोडी वेगळी असू शकतात. लिंक Netlify देते, हे पेज स्वतः लिंक बनवत नाही.</p></div>';
+  }else{
+    const l=loadList();
+    p.innerHTML=(l.length?l.map(x=>'<div class="proj"><div><strong>'+esc(x.title)+'</strong><p class="sub">'+kb(x.html)+' KB · '+new Date(x.updated).toLocaleDateString('mr-IN')+(x.id===P.id?' · उघडलेला':'')+'</p></div>'+
+      '<div class="row"><button class="btn sm" type="button" data-act="open" data-id="'+x.id+'">उघडा</button>'+
+      '<button class="btn ghost sm" type="button" data-act="del" data-id="'+x.id+'" data-confirm="1">काढा</button></div></div>').join(''):'<p class="sub">अजून कोणताही प्रोजेक्ट साठवलेला नाही. वेबसाईट बनवल्यावर ती येथे आपोआप साठते. हे फक्त याच फोनच्या ब्राउझरमध्ये राहते, म्हणून डाउनलोडही करून ठेवा.</p>');
+  }
+}
+function mountFrame(){
+  const fw=$('#fw');if(!fw)return;
+  const f=document.createElement('iframe');
+  f.title='वेबसाईटचे पूर्वावलोकन';
+  f.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox');
+  f.srcdoc=previewDoc(P.html);
+  fw.appendChild(f);
+}
+
+/* events */
+document.addEventListener('click',function(e){
+  const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
+  if(t.dataset.tab){tab=t.dataset.tab;render();return;}
+  if(t.dataset.confirm&&t.dataset.armed!=='1'){
+    t.dataset.armed='1';t.dataset.orig=t.textContent;t.textContent='पुन्हा दाबा';t.classList.add('armed');
+    setTimeout(()=>{if(t.isConnected){t.dataset.armed='';t.textContent=t.dataset.orig;t.classList.remove('armed');}},3000);return;
+  }
+  switch(t.dataset.act){
+    case 'dev':device=t.dataset.d;render();break;
+    case 'reload':render();break;
+    case 'applyCode':{const v=$('#code').value;if(v.trim().length<20){toast('कोड रिकामा आहे');break;}
+      if(v!==P.html)setHtml(v,'कोड एडिट');tab='preview';render();toast('बदल लागू केले');}break;
+    case 'copyCode':copyText($('#code').value,'कोड कॉपी झाला',$('#code'));break;
+    case 'copyAll':copyText(P.html,'पूर्ण कोड कॉपी झाला');break;
+    case 'editChip':{const i=$('#editIn');i.value=t.dataset.t;i.focus();}break;
+    case 'aiEdit':applyEdit();break;
+    case 'cont':continueGen();break;
+    case 'restore':{const v=versions[+t.dataset.i];if(v){setHtml(v.html,'परत आणलेले');tab='preview';render();toast('मागचे वर्जन परत आणले');}}break;
+    case 'dlZip':dlZip();break;
+    case 'dlHtml':saveOut('index.html',new Blob([P.html],{type:'text/html'}));break;
+    case 'open':{const x=loadList().find(y=>y.id===t.dataset.id);if(x){P={id:x.id,idea:x.idea,html:x.html,sample:false};versions=[];pending=null;showNotice('',null);try{localStorage.setItem(CUR,x.id);}catch(e){}tab='preview';render();window.scrollTo(0,0);}}break;
+    case 'del':{const l=loadList().filter(y=>y.id!==t.dataset.id);saveList(l);if(P.id===t.dataset.id){P={id:uid(),idea:'',html:DEMO,sample:true};versions=[];try{localStorage.removeItem(CUR);}catch(e){}}render();toast('प्रोजेक्ट काढला');}break;
+    case 'blank':P={id:uid(),idea:'',html:BLANK,sample:false};versions=[];pending=null;showNotice('',null);persist();tab='code';render();window.scrollTo(0,0);break;
+  }
+});
+$('#goBtn').addEventListener('click',generate);
+$('#stopBtn').addEventListener('click',function(){if(ctrl)ctrl.abort();});
+$('#examples').innerHTML=EXAMPLES.map(x=>'<button class="chip" type="button" data-ex="'+esc(x)+'">'+esc(x)+'</button>').join('');
+$('#examples').addEventListener('click',function(e){const b=e.target.closest('[data-ex]');if(!b)return;const i=$('#idea');i.value=b.dataset.ex;i.focus();});
+
+init();render();
+})();
+</script>
+
+</body></html>
